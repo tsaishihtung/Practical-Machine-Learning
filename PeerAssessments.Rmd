@@ -1,0 +1,159 @@
+---
+title: "Practical Machine Learning: Peer Assessment Project"
+output: html_document
+---
+###Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement ¡V a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).   
+
+What you should submit:   
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.    
+
+###Executive summary
+1.Fitting model by "rpart" only results in a mean 0.4913 accuracy.    
+2.Fitting model by "rf" with cross-validation results in a mean 0.9848 accuracy.   
+3.Fitting model by "gbm" with cross-validation results in 0.9562 accuracy.   
+4.Applying these models to training and testing data set by confusionMatrix:    
+
+training set(with cross-validation):   
+              Accuracy   
+model_rpart:   0.5482  (95% CI:0.5383,0.5581)     
+model_rf:      1.000 (95% CI:0.9996,1)  
+model_gbm:     0.9738  (95% CI:0.9705,0.9796)    
+
+testing set(with cross-validation):   
+              Accuracy   
+model_rpart:   0.5364  (95% CI:0.5265,0.5463)     
+model_rf:      0.9895  (95% CI:0.9873,0.9914)      
+model_gbm:     0.9552  (95% CI:0.9510,0.9593)     
+5.Use model_rf to the assignment and get 100% accuracy for the classe of the 20 program id.    
+
+###Read data and do exploratory data analysis:
+```{r setoptions,echo=TRUE,message=FALSE}
+library(caret);library(ggplot2);library(dplyr)
+library(rpart);library(randomForest);library(gbm)
+```
+
+```{r read data}
+train_data<-read.csv(file="D:/0 Coursera/8.Practical Machine Learning/Project/pml_training.csv")
+test_data<-read.csv(file="D:/0 Coursera/8.Practical Machine Learning/Project/pml_testing.csv")
+```
+
+There are 19622 and 20 observations in pml-training data and pml-testing data with 160 variables, and there are many missing values in the data.   
+Then (1)remove all NA that occur by columns,
+(2)remove date, time related columns, so that reduces variables to 52 in both training and testing data.
+
+```{r remove missing data,echo=TRUE,message=FALSE,results="hide"}
+train_data1<-cbind(train_data[1])
+test_data1<-cbind(test_data[1])
+for (i in 2:160){
+  TF_train<-train_data[,i] %in% NA |train_data[,i] %in% ""
+  TF_test<-test_data[,i] %in% NA |test_data[,i] %in% ""
+  if((any(TF_train)==TRUE)==FALSE){
+    train_data1<-cbind(train_data1,train_data[i])
+  }
+  if((any(TF_test)==TRUE)==FALSE){
+    test_data1<-cbind(test_data1,test_data[i])
+  }
+}
+
+train_data1<-select(train_data1,-(X:num_window))
+test_data1<-select(test_data1,-(X:num_window))
+```
+
+###Model:
+Step1.data partition for the training data(choose 50%) by caret package.      
+Step2:set preprocessing of the training data by preProcess=c("center","scale").   
+Step3:set a trainControl with 3 separate 3-folds cross-validation.      
+Step4:fit models by "rpart","rf","gbm" methods.
+
+```{r model,echo=TRUE,cache=TRUE,message=FALSE}
+set.seed(871)
+inTrain<-createDataPartition(y=train_data1$classe,p=0.5,list=FALSE)
+training<-train_data1[inTrain,]
+testing<-train_data1[-inTrain,]
+
+fitControl <- trainControl(## 3-fold CV
+                           method = "repeatedcv",
+                           number = 3,
+                           ## repeated three times
+                           repeats = 3)
+set.seed(1111)
+model_rpart<-train(classe~.,data=training,preProcess=c("center","scale"),method="rpart",trControl=fitControl)
+
+set.seed(2222)
+model_rf<-train(classe~.,data=training,preProcess=c("center","scale"),method="rf",trControl=fitControl,importance=TRUE,proximity=TRUE)
+
+set.seed(3333)
+model_gbm<-train(classe~.,data=training,preProcess=c("center","scale"),method="gbm",trControl=fitControl,verbose=FALSE)
+
+set.seed(4444)
+model_rf0<-randomForest(classe~.,data=training,preProcess=c("center","scale"),importance=TRUE,proximity=TRUE)
+```
+
+###Summary of the models with cross validation
+model_rf has the highest accuracy.
+``` {r summary of the model w/ cv }
+cvValues_cv <- resamples(list(Rpart_Model = model_rpart, 
+                            Random_Forest = model_rf,
+                            Gradient_Boosting = model_gbm))
+summary(cvValues_cv)
+```
+
+###Training set and testing set evaluations by models and apply model_rf to pml-testing.csv:
+Step1: test the taining and testing sets by above models and get the confusionMatrix.   
+Step2:to answer the assignment by applying model_rf to pml-testing data, and store the results in answer1.   
+Step3:submit answer1 to submission.    
+```{r test taining/testing set}
+#test training set by model_rf
+predictions1<-predict(model_rf,newdata=training)
+confusionMatrix(predictions1,training$classe)
+
+#test testing set by model_rf
+predictions2<-predict(model_rf,newdata=testing)
+confusionMatrix(predictions2,testing$classe)
+
+#apply model_rf to pml-testing.csv to get the classe of the 20 problem-id.
+answers1<-as.character()
+for (i in 1:20){
+predictions<-predict(model_rf,newdata=test_data1[i,])  
+answers1<-c(answers1,as.character(predictions))
+}
+
+#create 20 separate problem id text file and store each answer in each file. 
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+##pml_write_files(answers1)
+```
+
+###Predictions for the 20 program id:
+`r answers1`
+
+Appendix:   
+Model_rpart: regression and classification
+```{r model_rpart}
+model_rpart
+model_rpart$finalModel
+```
+
+Model_rf: random forests
+```{r model_rf}
+model_rf
+model_rf$finalModel
+```
+
+Model_gbm: boosting with trees
+```{r model_gbm}
+model_gbm
+model_gbm$finalModel
+```
+
+VarImpPlot:
+``` {r Variable importance plot}
+varImpPlot(model_rf0)
+```
