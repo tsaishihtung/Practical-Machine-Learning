@@ -1,1 +1,432 @@
-My Page
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Practical-machine-learning by tsaishihtung</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Practical-machine-learning</h1>
+      <h2 class="project-tagline">This is Practical Machine Learning Peer Assessment1</h2>
+      <a href="https://github.com/tsaishihtung/Practical-Machine-Learning" class="btn">View on GitHub</a>
+      <a href="https://github.com/tsaishihtung/Practical-Machine-Learning/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/tsaishihtung/Practical-Machine-Learning/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <p>&lt;!DOCTYPE html&gt;</p>
+
+<p></p>
+
+<p></p>
+
+<p>
+
+</p>
+
+<p></p>Practical Machine Learning: Peer Assessment Project
+
+
+
+<p>
+</p>
+
+
+
+
+
+
+
+code{white-space: pre;}
+
+<p></p>
+
+
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+
+
+<div>
+
+
+<div id="header">
+<h1>
+<a id="practical-machine-learning-peer-assessment-project" class="anchor" href="#practical-machine-learning-peer-assessment-project" aria-hidden="true"><span class="octicon octicon-link"></span></a>Practical Machine Learning: Peer Assessment Project</h1>
+</div>
+
+<div id="background">
+<h3>
+<a id="background" class="anchor" href="#background" aria-hidden="true"><span class="octicon octicon-link"></span></a>Background</h3>
+<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.More information is available from the website here: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a> (see the section on the Weight Lifting Exercise Dataset).</p>
+<p>What you should submit:</p>
+<p>The goal of your project is to predict the manner in which they did the exercise. This is the “classe” variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.</p>
+</div>
+
+<div id="executive-summary">
+<h3>
+<a id="executive-summary" class="anchor" href="#executive-summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Executive summary</h3>
+<p>1.Fitting model by “rpart” only results in a mean 0.4913 accuracy.<br>2.Fitting model by “rf” with cross-validation results in a mean 0.9848 accuracy.<br>3.Fitting model by “gbm” with cross-validation results in 0.9562 accuracy.<br>4.Applying these models to training and testing data set by confusionMatrix:</p>
+<p>training set(with cross-validation):<br> Accuracy<br>model_rpart: 0.5482 (95% CI:0.5383,0.5581)<br>model_rf: 1.000 (95% CI:0.9996,1)<br>model_gbm: 0.9738 (95% CI:0.9705,0.9796)</p>
+<p>testing set(with cross-validation):<br> Accuracy<br>model_rpart: 0.5364 (95% CI:0.5265,0.5463)<br>model_rf: 0.9895 (95% CI:0.9873,0.9914)<br>model_gbm: 0.9552 (95% CI:0.9510,0.9593)<br>5.Use model_rf to the assignment and get 100% accuracy for the classe of the 20 program id.</p>
+</div>
+
+<div id="read-data-and-do-exploratory-data-analysis">
+<h3>
+<a id="read-data-and-do-exploratory-data-analysis" class="anchor" href="#read-data-and-do-exploratory-data-analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Read data and do exploratory data analysis:</h3>
+<pre><code>library(caret);library(ggplot2);library(dplyr)
+library(rpart);library(randomForest);library(gbm)</code></pre>
+<pre><code>train_data&lt;-read.csv(file="D:/0 Coursera/8.Practical Machine Learning/Project/pml_training.csv")
+test_data&lt;-read.csv(file="D:/0 Coursera/8.Practical Machine Learning/Project/pml_testing.csv")</code></pre>
+<p>There are 19622 and 20 observations in pml-training data and pml-testing data with 160 variables, and there are many missing values in the data.<br>Then (1)remove all NA that occur by columns, (2)remove date, time related columns, so that reduces variables to 52 in both training and testing data.</p>
+<pre><code>train_data1&lt;-cbind(train_data[1])
+test_data1&lt;-cbind(test_data[1])
+for (i in 2:160){
+  TF_train&lt;-train_data[,i] %in% NA |train_data[,i] %in% ""
+  TF_test&lt;-test_data[,i] %in% NA |test_data[,i] %in% ""
+  if((any(TF_train)==TRUE)==FALSE){
+    train_data1&lt;-cbind(train_data1,train_data[i])
+  }
+  if((any(TF_test)==TRUE)==FALSE){
+    test_data1&lt;-cbind(test_data1,test_data[i])
+  }
+}
+
+train_data1&lt;-select(train_data1,-(X:num_window))
+test_data1&lt;-select(test_data1,-(X:num_window))</code></pre>
+</div>
+
+<div id="model">
+<h3>
+<a id="model" class="anchor" href="#model" aria-hidden="true"><span class="octicon octicon-link"></span></a>Model:</h3>
+<p>Step1.data partition for the training data(choose 50%) by caret package.<br>Step2:set preprocessing of the training data by preProcess=c(“center”,“scale”).<br>Step3:set a trainControl with 3 separate 3-folds cross-validation.<br>Step4:fit models by “rpart”,“rf”,“gbm” methods.</p>
+<pre><code>set.seed(871)
+inTrain&lt;-createDataPartition(y=train_data1$classe,p=0.5,list=FALSE)
+training&lt;-train_data1[inTrain,]
+testing&lt;-train_data1[-inTrain,]
+
+fitControl &lt;- trainControl(## 3-fold CV
+                           method = "repeatedcv",
+                           number = 3,
+                           ## repeated three times
+                           repeats = 3)
+set.seed(1111)
+model_rpart&lt;-train(classe~.,data=training,preProcess=c("center","scale"),method="rpart",trControl=fitControl)
+
+set.seed(2222)
+model_rf&lt;-train(classe~.,data=training,preProcess=c("center","scale"),method="rf",trControl=fitControl,importance=TRUE,proximity=TRUE)
+
+set.seed(3333)
+model_gbm&lt;-train(classe~.,data=training,preProcess=c("center","scale"),method="gbm",trControl=fitControl,verbose=FALSE)
+
+set.seed(4444)
+model_rf0&lt;-randomForest(classe~.,data=training,preProcess=c("center","scale"),importance=TRUE,proximity=TRUE)</code></pre>
+</div>
+
+<div id="summary-of-the-models-with-cross-validation">
+<h3>
+<a id="summary-of-the-models-with-cross-validation" class="anchor" href="#summary-of-the-models-with-cross-validation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Summary of the models with cross validation</h3>
+<p>model_rf has the highest accuracy.</p>
+<pre><code>cvValues_cv &lt;- resamples(list(Rpart_Model = model_rpart, 
+                            Random_Forest = model_rf,
+                            Gradient_Boosting = model_gbm))
+summary(cvValues_cv)</code></pre>
+<pre><code>## 
+## Call:
+## summary.resamples(object = cvValues_cv)
+## 
+## Models: Rpart_Model, Random_Forest, Gradient_Boosting 
+## Number of resamples: 9 
+## 
+## Accuracy 
+##                     Min. 1st Qu. Median   Mean 3rd Qu.   Max. NA's
+## Rpart_Model       0.3654  0.4791 0.4850 0.4913  0.5080 0.5741    0
+## Random_Forest     0.9798  0.9835 0.9865 0.9848  0.9869 0.9872    0
+## Gradient_Boosting 0.9529  0.9544 0.9557 0.9562  0.9587 0.9593    0
+## 
+## Kappa 
+##                     Min. 1st Qu. Median   Mean 3rd Qu.   Max. NA's
+## Rpart_Model       0.1234  0.3187 0.3270 0.3342  0.3543 0.4637    0
+## Random_Forest     0.9745  0.9791 0.9830 0.9808  0.9834 0.9838    0
+## Gradient_Boosting 0.9404  0.9423 0.9439 0.9446  0.9478 0.9486    0</code></pre>
+</div>
+
+<div id="training-set-and-testing-set-evaluations-by-models-and-apply-model_rf-to-pml-testing.csv">
+<h3>
+<a id="training-set-and-testing-set-evaluations-by-models-and-apply-model_rf-to-pml-testingcsv" class="anchor" href="#training-set-and-testing-set-evaluations-by-models-and-apply-model_rf-to-pml-testingcsv" aria-hidden="true"><span class="octicon octicon-link"></span></a>Training set and testing set evaluations by models and apply model_rf to pml-testing.csv:</h3>
+<p>Step1: test the taining and testing sets by above models and get the confusionMatrix.<br>Step2:to answer the assignment by applying model_rf to pml-testing data, and store the results in answer1.<br>Step3:submit answer1 to submission.</p>
+<pre><code>#test training set by model_rf
+predictions1&lt;-predict(model_rf,newdata=training)
+confusionMatrix(predictions1,training$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 2790    0    0    0    0
+##          B    0 1899    0    0    0
+##          C    0    0 1711    0    0
+##          D    0    0    0 1608    0
+##          E    0    0    0    0 1804
+## 
+## Overall Statistics
+##                                      
+##                Accuracy : 1          
+##                  95% CI : (0.9996, 1)
+##     No Information Rate : 0.2843     
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
+##                                      
+##                   Kappa : 1          
+##  Mcnemar's Test P-Value : NA         
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Prevalence             0.2843   0.1935   0.1744   0.1639   0.1839
+## Detection Rate         0.2843   0.1935   0.1744   0.1639   0.1839
+## Detection Prevalence   0.2843   0.1935   0.1744   0.1639   0.1839
+## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
+<pre><code>#test testing set by model_rf
+predictions2&lt;-predict(model_rf,newdata=testing)
+confusionMatrix(predictions2,testing$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 2787   29    0    0    2
+##          B    2 1861    6    2    2
+##          C    0    8 1701   41    2
+##          D    0    0    4 1563    1
+##          E    1    0    0    2 1796
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9896          
+##                  95% CI : (0.9874, 0.9915)
+##     No Information Rate : 0.2844          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9868          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9989   0.9805   0.9942   0.9720   0.9961
+## Specificity            0.9956   0.9985   0.9937   0.9994   0.9996
+## Pos Pred Value         0.9890   0.9936   0.9709   0.9968   0.9983
+## Neg Pred Value         0.9996   0.9953   0.9988   0.9945   0.9991
+## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2841   0.1897   0.1734   0.1593   0.1831
+## Detection Prevalence   0.2873   0.1909   0.1786   0.1598   0.1834
+## Balanced Accuracy      0.9973   0.9895   0.9939   0.9857   0.9979</code></pre>
+<pre><code>#apply model_rf to pml-testing.csv to get the classe of the 20 problem-id.
+answers1&lt;-as.character()
+for (i in 1:20){
+predictions&lt;-predict(model_rf,newdata=test_data1[i,])  
+answers1&lt;-c(answers1,as.character(predictions))
+}
+
+#create 20 separate problem id text file and store each answer in each file. 
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+##pml_write_files(answers1)</code></pre>
+</div>
+
+<div id="predictions-for-the-20-program-id">
+<h3>
+<a id="predictions-for-the-20-program-id" class="anchor" href="#predictions-for-the-20-program-id" aria-hidden="true"><span class="octicon octicon-link"></span></a>Predictions for the 20 program id:</h3>
+<p>B, A, B, A, A, E, D, B, A, A, B, C, B, A, E, E, A, B, B, B</p>
+<p>Appendix:<br>Model_rpart: regression and classification</p>
+<pre><code>model_rpart</code></pre>
+<pre><code>## CART 
+## 
+## 9812 samples
+##   52 predictor
+##    5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## Pre-processing: centered, scaled 
+## Resampling: Cross-Validated (3 fold, repeated 3 times) 
+## 
+## Summary of sample sizes: 6542, 6541, 6541, 6542, 6540, 6542, ... 
+## 
+## Resampling results across tuning parameters:
+## 
+##   cp          Accuracy   Kappa       Accuracy SD  Kappa SD  
+##   0.03987468  0.4912671  0.33419939  0.05865542   0.09633780
+##   0.04227191  0.4657899  0.29372537  0.06083957   0.10295552
+##   0.11506693  0.3199501  0.05421787  0.04225706   0.06432661
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was cp = 0.03987468.</code></pre>
+<pre><code>model_rpart$finalModel</code></pre>
+<pre><code>## n= 9812 
+## 
+## node), split, n, loss, yval, (yprob)
+##       * denotes terminal node
+## 
+##   1) root 9812 7022 A (0.28 0.19 0.17 0.16 0.18)  
+##     2) roll_belt&lt; 1.051308 8996 6210 A (0.31 0.21 0.19 0.18 0.11)  
+##       4) pitch_forearm&lt; -1.570249 814    4 A (1 0.0049 0 0 0) *
+##       5) pitch_forearm&gt;=-1.570249 8182 6206 A (0.24 0.23 0.21 0.2 0.12)  
+##        10) yaw_belt&gt;=1.885123 397   44 A (0.89 0.045 0 0.058 0.0076) *
+##        11) yaw_belt&lt; 1.885123 7785 5908 B (0.21 0.24 0.22 0.2 0.13)  
+##          22) magnet_dumbbell_z&lt; -0.9584772 1025  442 A (0.57 0.29 0.047 0.07 0.023) *
+##          23) magnet_dumbbell_z&gt;=-0.9584772 6760 5097 C (0.15 0.23 0.25 0.22 0.14)  
+##            46) pitch_belt&lt; -1.918773 419   66 B (0.021 0.84 0.076 0.021 0.038) *
+##            47) pitch_belt&gt;=-1.918773 6341 4710 C (0.16 0.19 0.26 0.24 0.15)  
+##              94) accel_dumbbell_y&gt;=-1.149203 5808 4323 D (0.18 0.2 0.21 0.26 0.16)  
+##               188) magnet_dumbbell_y&lt; 0.2191518 2573 1568 C (0.2 0.11 0.39 0.17 0.13) *
+##               189) magnet_dumbbell_y&gt;=0.2191518 3235 2183 D (0.16 0.28 0.066 0.33 0.18) *
+##              95) accel_dumbbell_y&lt; -1.149203 533  122 C (0.017 0.092 0.77 0.036 0.084) *
+##     3) roll_belt&gt;=1.051308 816    4 E (0.0049 0 0 0 1) *</code></pre>
+<p>Model_rf: random forests</p>
+<pre><code>model_rf</code></pre>
+<pre><code>## Random Forest 
+## 
+## 9812 samples
+##   52 predictor
+##    5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## Pre-processing: centered, scaled 
+## Resampling: Cross-Validated (3 fold, repeated 3 times) 
+## 
+## Summary of sample sizes: 6540, 6542, 6542, 6541, 6542, 6541, ... 
+## 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
+##    2    0.9820289  0.9772617  0.001793225  0.002267822
+##   27    0.9848143  0.9807879  0.002740030  0.003469605
+##   52    0.9788008  0.9731779  0.003925095  0.004969840
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 27.</code></pre>
+<pre><code>model_rf$finalModel</code></pre>
+<pre><code>## 
+## Call:
+##  randomForest(x = x, y = y, mtry = param$mtry, importance = TRUE,      proximity = TRUE) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 27
+## 
+##         OOB estimate of  error rate: 1.04%
+## Confusion matrix:
+##      A    B    C    D    E  class.error
+## A 2788    1    1    0    0 0.0007168459
+## B   20 1865   13    1    0 0.0179041601
+## C    0   16 1689    6    0 0.0128579778
+## D    0    0   27 1578    3 0.0186567164
+## E    0    0    5    9 1790 0.0077605322</code></pre>
+<p>Model_gbm: boosting with trees</p>
+<pre><code>model_gbm</code></pre>
+<pre><code>## Stochastic Gradient Boosting 
+## 
+## 9812 samples
+##   52 predictor
+##    5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## Pre-processing: centered, scaled 
+## Resampling: Cross-Validated (3 fold, repeated 3 times) 
+## 
+## Summary of sample sizes: 6542, 6540, 6542, 6542, 6541, 6541, ... 
+## 
+## Resampling results across tuning parameters:
+## 
+##   interaction.depth  n.trees  Accuracy   Kappa      Accuracy SD
+##   1                   50      0.7527846  0.6863713  0.009627109
+##   1                  100      0.8176031  0.7691507  0.010108642
+##   1                  150      0.8503183  0.8105910  0.007393015
+##   2                   50      0.8477025  0.8070444  0.007708095
+##   2                  100      0.9034847  0.8778482  0.005187850
+##   2                  150      0.9287262  0.9098086  0.003224985
+##   3                   50      0.8909826  0.8619967  0.007350488
+##   3                  100      0.9375248  0.9209480  0.004021096
+##   3                  150      0.9562097  0.9445977  0.002542076
+##   Kappa SD   
+##   0.012246510
+##   0.012775986
+##   0.009266397
+##   0.009796229
+##   0.006565642
+##   0.004085342
+##   0.009281724
+##   0.005093016
+##   0.003223478
+## 
+## Tuning parameter 'shrinkage' was held constant at a value of 0.1
+## 
+## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
+## Accuracy was used to select the optimal model using  the largest value.
+## The final values used for the model were n.trees = 150,
+##  interaction.depth = 3, shrinkage = 0.1 and n.minobsinnode = 10.</code></pre>
+<pre><code>model_gbm$finalModel</code></pre>
+<pre><code>## A gradient boosted model with multinomial loss function.
+## 150 iterations were performed.
+## There were 52 predictors of which 43 had non-zero influence.</code></pre>
+<p>VarImpPlot:</p>
+<pre><code>varImpPlot(model_rf0)</code></pre>
+<p><img title alt width="672"></p>
+</div>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/tsaishihtung/Practical-Machine-Learning">Practical-machine-learning</a> is maintained by <a href="https://github.com/tsaishihtung">tsaishihtung</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
